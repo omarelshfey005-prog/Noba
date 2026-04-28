@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NubaFarm System | Production & Logistics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load barcode library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            overflow-x: hidden;
+        }
+
+        /* Sticker size: 10cm × 15cm (3.94in × 5.91in) */
+        .sticker-container {
+            width: 10cm;
+            height: 15cm;
+            background: white;
+            position: relative;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* For print media - Thermal Printer Optimization */
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            
+            @page { 
+                size: 10cm 15cm; 
+                margin: 0; 
+            }
+            
+            body { 
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white;
+                -webkit-print-color-adjust: exact;
+                -webkit-filter: contrast(1.2) brightness(1.1);
+                filter: contrast(1.2) brightness(1.1);
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            
+            .sticker-container {
+                width: 100% !important;
+                height: 100% !important;
+                border: none;
+                box-shadow: none;
+                page-break-inside: avoid;
+                margin: 0;
+                padding: 8px 6px;
+                background: white !important;
+                position: relative;
+            }
+            
+            /* Thermal printer text optimization */
+            .sticker-title,
+            .sticker-label,
+            .sticker-value,
+            .sticker-large-value {
+                color: #000000 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                text-shadow: none !important;
+            }
+            
+            /* Enhance contrast for thermal printing */
+            .sticker-title {
+                -webkit-text-stroke: 0.3px #000000;
+                text-rendering: geometricPrecision;
+            }
+            
+            .sticker-large-value {
+                -webkit-text-stroke: 0.2px #000000;
+            }
+            
+            /* Remove decorative colors for thermal - use black only */
+            [style*="color: #ea580c"],
+            [style*="color: #6b7280"],
+            [style*="color: #374151"],
+            [style*="color: #4b5563"],
+            [style*="color: #111827"],
+            [style*="color: #1f2937"] {
+                color: #000000 !important;
+            }
+            
+            .bg-orange-500 {
+                display: none;
+            }
+            
+            /* Border optimization for thermal */
+            .border-t,
+            .border-gray-300 {
+                border-color: #000000 !important;
+                -webkit-print-color-adjust: exact !important;
+            }
+        }
+
+        /* Barcode styles - Thermal optimized */
+        .barcode-container {
+            width: 100%;
+            text-align: center;
+            margin: 0 auto;
+            padding: 4px 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* Font styles for better readability - Thermal optimized */
+        .sticker-title {
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 900;
+            letter-spacing: 0.2px;
+            line-height: 1.1;
+        }
+
+        .sticker-label {
+            font-weight: 800;
+            font-size: 9px;
+            color: #000000;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            line-height: 1.2;
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        .sticker-value {
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 700;
+            font-size: 11px;
+            color: #000000;
+            line-height: 1.2;
+            letter-spacing: 0.05px;
+        }
+
+        .sticker-large-value {
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 900;
+            font-size: 16px;
+            color: #000000;
+            line-height: 1.1;
+            letter-spacing: 0.1px;
+        }
+
+        /* Animation classes */
+        .slide-up {
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Thermal Printer CSS Variables */
+        :root {
+            --thermal-black: #000000;
+            --thermal-white: #ffffff;
+            --thermal-border: #000000;
+        }
+
+        /* Arabic support */
+        [dir="rtl"] .rtl-space-x-reverse > :not([hidden]) ~ :not([hidden]) {
+            --tw-space-x-reverse: 1;
+        }
+
+        /* Card hover effects */
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        /* Status badges */
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .status-in-stock {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .status-shipped {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        /* Utility classes for thermal printing */
+        .text-6px {
+            font-size: 6px !important;
+        }
+
+        .text-7px {
+            font-size: 7px !important;
+        }
+
+        .text-xs {
+            font-size: 10px !important;
+        }
+
+        .text-sm {
+            font-size: 14px !important;
+        }
+
+        @media print {
+            .text-6px { font-size: 6px !important; }
+            .text-7px { font-size: 7px !important; }
+            .text-xs { font-size: 10px !important; }
+            .text-sm { font-size: 14px !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Main App Container -->
+    <div class="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans" dir="ltr" id="app-container">
+        <!-- Navigation Sidebar -->
+        <nav class="no-print fixed bottom-0 w-full bg-slate-900 text-white flex justify-around p-1 md:relative md:w-64 md:flex-col md:justify-start md:p-6 md:h-screen z-50">
+            <div class="hidden md:flex items-center space-x-3 mb-10 rtl:space-x-reverse">
+                <div class="bg-orange-500 p-2 rounded-lg">
+                    <i class="fas fa-leaf text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black leading-none uppercase">NubaFarm System</h1>
+                    <p class="text-[10px] text-orange-500 font-bold uppercase tracking-widest">Production & Logistics</p>
+                </div>
+            </div>
+
+            <div class="flex md:flex-col w-full md:space-y-2" id="nav-buttons">
+                <!-- Navigation buttons will be inserted here by JavaScript -->
+            </div>
+
+            <!-- Sidebar Developer Credit -->
+            <div class="hidden md:block mt-auto pt-6 border-t border-slate-800 opacity-40">
+                <p class="text-[10px] font-bold text-center text-slate-500 uppercase tracking-widest">
+                    Developed by<br/>Omar Elshafey
+                </p>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 pb-24 md:pb-0 md:h-screen md:overflow-y-auto flex flex-col">
+            <header class="no-print flex h-14 md:h-16 bg-white border-b border-slate-200 items-center justify-between px-4 md:px-8 sticky top-0 z-40">
+                <button onclick="toggleLanguage()" class="flex items-center space-x-1 bg-slate-100 px-3 py-1.5 rounded-full text-xs font-bold text-slate-600 hover:bg-orange-100 transition-colors">
+                    <i class="fas fa-language text-sm"></i>
+                    <span id="lang-button">العربية</span>
+                </button>
+                
+                <div class="flex items-center space-x-3 rtl:space-x-reverse">
+                    <div class="text-right rtl:text-left">
+                        <p class="text-[10px] font-bold text-slate-900 leading-none">System Live</p>
+                        <p class="text-[9px] text-slate-400">Omar Elshafey Ed.</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center">
+                        <i class="fas fa-leaf text-orange-600 text-sm"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area - Will be dynamically loaded -->
+            <div class="flex-1 p-3 md:p-8 max-w-7xl mx-auto w-full" id="content-area">
+                <div class="text-center py-20 fade-in">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                    <p class="text-slate-500">Loading NubaFarm System...</p>
+                </div>
+            </div>
+
+            <!-- Global Footer Credit -->
+            <footer class="no-print w-full py-6 mt-auto border-t border-slate-200 bg-white">
+                <p class="text-center text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">
+                    Developed by <span class="text-orange-600">Omar Elshafey</span>
+                </p>
+            </footer>
+        </main>
+    </div>
+
+    <!-- JavaScript for the entire application -->
+    <script>
+        // ==================== APPLICATION STATE ====================
+        let appState = {
+            language: 'en',
+            activeTab: 'dashboard',
+            pallets: [],
+            shipments: [],
+            customers: ["Global Fruits Ltd", "Fresh Market Europe", "Gulf Traders"],
+            pinCode: "1234",
+            products: ["Valencia Orange", "Murcott", "Lemon"],
+            categories: ["CAT 1", "CAT 2"],
+            cartonColors: ["Black", "Green", "Blue", "White", "Lamarina", "Mr George"],
+            packageTypes: [
+                { id: "tc15", name: "TC 15 KG (Bottom + Top)", weight: 15, isBin: false, hasColor: true },
+                { id: "ot15", name: "Open Top 15 KG", weight: 15, isBin: false, hasColor: true },
+                { id: "pl15", name: "Plastic Box 15 KG", weight: 15, isBin: false, hasColor: false },
+                { id: "pl10", name: "Plastic Box 10 KG", weight: 10, isBin: false, hasColor: false },
+                { id: "bins", name: "BINS 600 KG", weight: 600, isBin: true, hasColor: false },
+            ],
+            sizes: {
+                default: [36, 40, 48, 56, 64, 72, 80, 88, 100, 113, 125, 138],
+                murcott: [32, 36, 40, 48, 56, 63, 72, 80, 88, 100],
+            },
+            ports: ["Rotterdam", "St. Petersburg", "Jebel Ali", "Valencia", "Hamburg"],
+            shippingLines: ["Maersk", "MSC", "CMA CGM", "Hapag-Lloyd", "Cosco"]
+        };
+
+        // ==================== TRANSLATIONS ====================
+        const translations = {
+            en: {
+                dir: 'ltr',
+                appName: 'NubaFarm System',
+                tagline: 'Production & Logistics',
+                dashboard: 'Dashboard',
+                production: 'Production',
+                inventory: 'Inventory',
+                loading: 'Loading',
+                settings: 'Settings',
+                totalRegistered: 'Total Registered',
+                inInventory: 'In Inventory',
+                shippedTotal: 'Shipped Total',
+                todayProduction: 'Today\'s Production',
+                recentActivity: 'Recent Activity',
+                palletId: 'Pallet ID',
+                product: 'Product',
+                size: 'Size',
+                category: 'Category',
+                color: 'Color',
+                quantity: 'Quantity',
+                weight: 'Weight',
+                status: 'Status',
+                inStock: 'In Stock',
+                shipped: 'Shipped',
+                productionEntry: 'Production Entry',
+                nextCode: 'Next Code',
+                packageType: 'Package Type',
+                palletBasis: 'Pallet Basis',
+                cartonColor: 'Carton Color',
+                configSummary: 'Config Summary',
+                generatePallet: 'Generate Pallet',
+                newEntry: 'New Entry',
+                printSticker: 'Print Sticker',
+                searchInventory: 'Search stock...',
+                noPallets: 'No pallets in stock',
+                shipmentMgmt: 'Shipments',
+                newShipment: 'New Shipment',
+                customer: 'Customer',
+                destination: 'Port',
+                container: 'Container',
+                finalize: 'Finalize Shipment',
+                supervisorAccess: 'Supervisor Access',
+                enterPin: 'Enter 4-digit PIN',
+                unlock: 'Unlock System',
+                lock: 'Lock',
+                boxes: 'Boxes',
+                units: 'Units',
+                addCustomer: 'Add Customer',
+                customerName: 'Customer Name',
+                add: 'Add',
+                delete: 'Delete',
+                clearData: 'Clear All Data',
+                confirmClear: 'Are you sure? This will delete all production and shipment data.',
+                cancel: 'Cancel',
+                confirm: 'Confirm',
+                palletCode: 'Pallet Code',
+                trackingCode: 'Tracking Code',
+                productionDate: 'Production Date',
+                netWeight: 'Net Weight',
+                actions: 'Actions',
+                selectCustomer: 'Select Customer',
+                selectPort: 'Select Port',
+                selectShippingLine: 'Shipping Line',
+                selectPallets: 'Select Pallets',
+                createShipment: 'Create Shipment',
+                shipmentCreated: 'Shipment Created!',
+                palletGenerated: 'Pallet Generated!',
+                invalidPin: 'Invalid PIN Code',
+                dataCleared: 'All data cleared successfully',
+                customerAdded: 'Customer added successfully',
+                customerDeleted: 'Customer deleted successfully',
+                qrCode: 'QR Code',
+                printPreview: 'Print Preview',
+                printSize: 'Sticker Size: 10×15 cm',
+                generatedOn: 'Generated On',
+                grossWeight: 'Gross Weight',
+                netWeightKg: 'Net Weight (KG)',
+                pieces: 'Pieces',
+                printInstructions: 'For best thermal printer results: 1) Use 10×15 cm thermal sticker paper 2) Set print quality to MAXIMUM 3) Ensure 100% black color output 4) Disable color correction in printer settings 5) Use margins: 0 6) Ensure proper thermal head temperature',
+                saveAndPrint: 'Save & Print',
+                quickActions: 'Quick Actions',
+                createNewPallet: 'Create new pallet entry',
+                createNewShipment: 'Create new shipment',
+                printStickers: 'Print Stickers',
+                printExistingPallets: 'Print existing pallet stickers',
+                startProduction: 'Start production to see pallets here',
+                welcome: 'Welcome',
+                shipmentDetails: 'Shipment Details',
+                shippingLine: 'Shipping Line',
+                selectedPallets: 'Selected Pallets',
+                selectAll: 'Select All',
+                create: 'Create',
+                confirmShipment: 'Confirm Shipment',
+                palletNotFound: 'Pallet not found',
+                availableForShipment: 'Available for shipment',
+                alreadyShipped: 'Already shipped',
+                noPalletsAvailable: 'No pallets available for shipment',
+                shipmentNumber: 'Shipment Number',
+                shippingDate: 'Shipping Date',
+                totalWeight: 'Total Weight',
+                palletCount: 'Pallet Count',
+                clearConfirmation: 'Clear Confirmation',
+                pinCodeSettings: 'PIN Code Settings',
+                changePin: 'Change PIN Code',
+                currentPin: 'Current PIN',
+                newPin: 'New PIN',
+                confirmNewPin: 'Confirm New PIN',
+                pinChanged: 'PIN changed successfully',
+                pinsDoNotMatch: 'PINs do not match',
+                incorrectPin: 'Incorrect current PIN'
+            },
+            ar: {
+                dir: 'rtl',
+                appName: 'نظام نوبا فارم',
+                tagline: 'الإنتاج واللوجستيات',
+                dashboard: 'لوحة التحكم',
+                production: 'الإنتاج',
+                inventory: 'المخزون',
+                loading: 'التحميل',
+                settings: 'الإعدادات',
+                totalRegistered: 'إجمالي المسجل',
+                inInventory: 'في المخزن',
+                shippedTotal: 'إجمالي المشحون',
+                todayProduction: 'إنتاج اليوم',
+                recentActivity: 'آخر النشاطات',
+                palletId: 'رقم البالتة',
+                product: 'المنتج',
+                size: 'المقاس',
+                category: 'التصنيف',
+                color: 'اللون',
+                quantity: 'الكمية',
+                weight: 'الوزن',
+                status: 'الحالة',
+                inStock: 'في المخزن',
+                shipped: 'تم الشحن',
+                productionEntry: 'إدخال إنتاج',
+                nextCode: 'الكود القادم',
+                packageType: 'نوع التعبئة',
+                palletBasis: 'نوع البالتة',
+                cartonColor: 'لون الكرتون',
+                configSummary: 'ملخص التكوين',
+                generatePallet: 'إنشاء بالتة',
+                newEntry: 'إدخال جديد',
+                printSticker: 'طباعة الملصق',
+                searchInventory: 'بحث في المخزن...',
+                noPallets: 'لا يوجد بالتات في المخزن',
+                shipmentMgmt: 'إدارة الشحنات',
+                newShipment: 'شحنة جديدة',
+                customer: 'العميل',
+                destination: 'الميناء',
+                container: 'الحاوية',
+                finalize: 'إنهاء الشحنة',
+                supervisorAccess: 'دخول المشرف',
+                enterPin: 'أدخل رمز PIN المكون من 4 أرقام',
+                unlock: 'فتح النظام',
+                lock: 'قفل',
+                boxes: 'كرتون',
+                units: 'وحدة',
+                addCustomer: 'إضافة عميل',
+                customerName: 'اسم العميل',
+                add: 'إضافة',
+                delete: 'حذف',
+                clearData: 'مسح كل البيانات',
+                confirmClear: 'هل أنت متأكد؟ هذا سيمسح كل بيانات الإنتاج والشحن.',
+                cancel: 'إلغاء',
+                confirm: 'تأكيد',
+                palletCode: 'كود البالتة',
+                trackingCode: 'كود التتبع',
+                productionDate: 'تاريخ الإنتاج',
+                netWeight: 'الوزن الصافي',
+                actions: 'الإجراءات',
+                selectCustomer: 'اختر عميل',
+                selectPort: 'اختر ميناء',
+                selectShippingLine: 'خط الشحن',
+                selectPallets: 'اختر البالتات',
+                createShipment: 'إنشاء شحنة',
+                shipmentCreated: 'تم إنشاء الشحنة!',
+                palletGenerated: 'تم إنشاء البالتة!',
+                invalidPin: 'رمز PIN غير صحيح',
+                dataCleared: 'تم مسح كل البيانات بنجاح',
+                customerAdded: 'تم إضافة العميل بنجاح',
+                customerDeleted: 'تم حذف العميل بنجاح',
+                qrCode: 'رمز QR',
+                printPreview: 'معاينة الطباعة',
+                printSize: 'حجم الملصق: 10×15 سم',
+                generatedOn: 'تم الإنشاء في',
+                grossWeight: 'الوزن الإجمالي',
+                netWeightKg: 'الوزن الصافي (كجم)',
+                pieces: 'قطعة',
+                printInstructions: 'لأفضل نتائج الطابعة الحرارية: 1) استخدم ورق ملصقات حرارية مقاس 10×15 سم 2) اضبط جودة الطباعة على الأعلى 3) تأكد من مخرجات اللون الأسود بنسبة 100% 4) عطّل تصحيح الألوان في إعدادات الطابعة 5) اضبط الهوامش على 0 6) تأكد من درجة حرارة رأس الطباعة الصحيحة',
+                saveAndPrint: 'حفظ وطباعة',
+                quickActions: 'إجراءات سريعة',
+                createNewPallet: 'إنشاء إدخال بالتة جديد',
+                createNewShipment: 'إنشاء شحنة جديدة',
+                printStickers: 'طباعة الملصقات',
+                printExistingPallets: 'طباعة ملصقات البالتات الموجودة',
+                startProduction: 'ابدأ الإنتاج لرؤية البالتات هنا',
+                welcome: 'مرحباً',
+                shipmentDetails: 'تفاصيل الشحنة',
+                shippingLine: 'خط الشحن',
+                selectedPallets: 'البالتات المحددة',
+                selectAll: 'تحديد الكل',
+                create: 'إنشاء',
+                confirmShipment: 'تأكيد الشحنة',
+                palletNotFound: 'البالتة غير موجودة',
+                availableForShipment: 'متاح للشحن',
+                alreadyShipped: 'تم شحنه بالفعل',
+                noPalletsAvailable: 'لا توجد بالتات متاحة للشحن',
+                shipmentNumber: 'رقم الشحنة',
+                shippingDate: 'تاريخ الشحن',
+                totalWeight: 'الوزن الإجمالي',
+                palletCount: 'عدد البالتات',
+                clearConfirmation: 'تأكيد المسح',
+                pinCodeSettings: 'إعدادات رمز PIN',
+                changePin: 'تغيير رمز PIN',
+                currentPin: 'رمز PIN الحالي',
+                newPin: 'رمز PIN الجديد',
+                confirmNewPin: 'تأكيد رمز PIN الجديد',
+                pinChanged: 'تم تغيير الرمز بنجاح',
+                pinsDoNotMatch: 'الرموز غير متطابقة',
+                incorrectPin: 'رمز PIN الحالي غير صحيح'
+            }
+        };
+
+        // ==================== UTILITY FUNCTIONS ====================
+        function t(key) {
+            return translations[appState.language][key] || key;
+        }
+
+        function formatDate(date = new Date()) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function generatePalletCode() {
+            const date = new Date();
+            const year = date.getFullYear().toString().slice(-2);
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const random = Math.floor(Math.random() * 9000 + 1000);
+            return `NF${year}${month}${day}${random}`;
+        }
+
+        function generateTrackingCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 10; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        function generateShipmentNumber() {
+            const date = new Date();
+            const year = date.getFullYear().toString().slice(-2);
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const random = Math.floor(Math.random() * 900 + 100);
+            return `SH${year}${month}${day}${random}`;
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('nubafarm_pallets', JSON.stringify(appState.pallets));
+            localStorage.setItem('nubafarm_shipments', JSON.stringify(appState.shipments));
+            localStorage.setItem('nubafarm_customers', JSON.stringify(appState.customers));
+            localStorage.setItem('nubafarm_lang', appState.language);
+            localStorage.setItem('nubafarm_pin', appState.pinCode);
+        }
+
+        function loadFromLocalStorage() {
+            const savedPallets = localStorage.getItem('nubafarm_pallets');
+            const savedShipments = localStorage.getItem('nubafarm_shipments');
+            const savedCustomers = localStorage.getItem('nubafarm_customers');
+            const savedLang = localStorage.getItem('nubafarm_lang');
+            const savedPin = localStorage.getItem('nubafarm_pin');
+            
+            if (savedPallets) appState.pallets = JSON.parse(savedPallets);
+            if (savedShipments) appState.shipments = JSON.parse(savedShipments);
+            if (savedCustomers) appState.customers = JSON.parse(savedCustomers);
+            if (savedLang && (savedLang === 'en' || savedLang === 'ar')) appState.language = savedLang;
+            if (savedPin) appState.pinCode = savedPin;
+        }
+
+        function showNotification(message, type = 'info') {
+            const colors = {
+                success: 'bg-green-100 border-green-500 text-green-700',
+                error: 'bg-red-100 border-red-500 text-red-700',
+                info: 'bg-blue-100 border-blue-500 text-blue-700',
+                warning: 'bg-orange-100 border-orange-500 text-orange-700'
+            };
+            
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 md:top-8 md:right-8 px-6 py-4 rounded-lg border shadow-lg z-50 ${colors[type]} slide-up`;
+            notification.innerHTML = `
+                <div class="flex items-center space-x-3 rtl:space-x-reverse">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                    <span class="font-medium">${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // ==================== STICKER GENERATION ====================
+        function generateStickerHTML(pallet) {
+            const currentDate = new Date();
+            const formattedTime = currentDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const formattedDate = currentDate.toLocaleDateString();
+            
+            return `
+                <div class="sticker-container p-2">
+                    <!-- Header -->
+                    <div class="text-center mb-2">
+                        <h1 class="sticker-title text-xl mb-0.5" style="color: #000000;">NUBAFARM</h1>
+                        <div class="flex justify-center items-center space-x-1 rtl:space-x-reverse">
+                            <p class="sticker-label text-xs" style="color: #000000;">PROD•LOGISTICS</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Main Information Grid -->
+                    <div class="mb-2">
+                        <div class="grid grid-cols-2 gap-1.5 mb-2">
+                            <div>
+                                <p class="sticker-label mb-0.5 text-7px">${t('palletId')}</p>
+                                <p class="sticker-large-value text-sm">${pallet.palletCode}</p>
+                            </div>
+                            <div>
+                                <p class="sticker-label mb-0.5 text-7px">${t('trackingCode')}</p>
+                                <p class="sticker-large-value text-sm">${pallet.trackingCode}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-1.5 mb-2">
+                            <div>
+                                <p class="sticker-label mb-0.5 text-7px">${t('product')}</p>
+                                <p class="sticker-value text-xs">${pallet.product}</p>
+                            </div>
+                            <div>
+                                <p class="sticker-label mb-0.5 text-7px">${t('size')}</p>
+                                <p class="sticker-value text-xs">${pallet.size}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-1.5 mb-2">
+                            <div>
+                                <p class="sticker-label mb-0.5 text-7px">${t('category')}</p>
+                                <p class="sticker-value text-xs">${pallet.category}</p>
+                            </div>
+                            <div>
+                                <p class="sticker-label mb-0.5 text-7px">${t('packageType')}</p>
+                                <p class="sticker-value text-xs">${pallet.packageName}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-1.5 mb-2">
+                            <div>
+                                <p class="sticker-label mb-0.5 text-7px">${t('color')}</p>
+                                <p class="sticker-value text-xs">${pallet.color}</p>
+                            </div>
+                            <div>
+                                <p class="sticker-label mb-0.5 text-7px">${t('palletBasis')}</p>
+                                <p class="sticker-value text-xs">${pallet.palletType}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-1.5 mb-2">
+                            <div>
+                                <p class="sticker-label mb-0.5 text-7px">${t('quantity')}</p>
+                                <p class="sticker-value text-xs">${pallet.quantity} ${t('boxes')}</p>
+                            </div>
+                            <div>
+                                <p class="sticker-label mb-0.5 text-7px">${t('netWeightKg')}</p>
+                                <p class="sticker-value text-xs">${pallet.netWeight} KG</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Barcode Section -->
+                    <div class="barcode-container mb-1.5">
+                        <svg id="barcode-${pallet.trackingCode}"></svg>
+                    </div>
+                    
+                    <!-- Footer Information -->
+                    <div class="mt-1.5 pt-1.5 border-t border-gray-800">
+                        <div class="grid grid-cols-2 gap-1.5 mb-1">
+                            <div>
+                                <p class="sticker-label mb-0.5 text-7px">${t('productionDate')}</p>
+                                <p class="sticker-value text-7px">${pallet.productionDate}</p>
+                            </div>
+                            <div>
+                                <p class="sticker-label mb-0.5 text-7px">${t('generatedOn')}</p>
+                                <p class="sticker-value text-7px">${formattedDate}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-1 text-center">
+                            <p class="sticker-label text-6px" style="color: #000000; letter-spacing: 0.1px;">nubafarm.com</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateBarcode(code, elementId) {
+            try {
+                JsBarcode(`#${elementId}`, code, {
+                    format: "CODE128",
+                    width: 2.5,
+                    height: 50,
+                    displayValue: true,
+                    fontOptions: "bold",
+                    font: "Roboto Mono",
+                    fontSize: 12,
+                    textMargin: 4,
+                    margin: 0,
+                    background: "#ffffff",
+                    lineColor: "#000000",
+                    ean128: false
+                });
+            } catch (error) {
+                console.log("Barcode generation error:", error);
+                // Fallback if barcode library fails
+                document.getElementById(elementId).innerHTML = `
+                    <div class="text-center">
+                        <div class="inline-block bg-white px-3 py-1 rounded border-2 border-black">
+                            <p class="font-mono font-bold text-xs">${code}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function printSticker(pallet = null) {
+            if (!pallet) {
+                // Get current form values for preview
+                const product = document.getElementById('product-select')?.value || appState.products[0];
+                const size = parseInt(document.getElementById('size-select')?.value) || 36;
+                const category = document.getElementById('category-select')?.value || appState.categories[0];
+                const packageTypeId = document.getElementById('package-type-select')?.value || 'tc15';
+                const color = document.getElementById('color-select')?.value || appState.cartonColors[0];
+                const quantity = parseInt(document.getElementById('quantity-input')?.value) || 100;
+                const palletType = document.getElementById('pallet-type-select')?.value || 'Normal';
+                
+                const packageType = appState.packageTypes.find(p => p.id === packageTypeId);
+                const netWeight = quantity * (packageType?.weight || 15);
+                
+                pallet = {
+                    palletCode: generatePalletCode(),
+                    trackingCode: generateTrackingCode(),
+                    product,
+                    category,
+                    packageType: packageTypeId,
+                    packageName: packageType?.name || 'TC 15 KG',
+                    size,
+                    palletType,
+                    color,
+                    quantity,
+                    netWeight,
+                    status: 'In Stock',
+                    productionDate: formatDate()
+                };
+            }
+            
+            const printWindow = window.open('', '_blank');
+            const stickerHTML = generateStickerHTML(pallet);
+            
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Pallet Sticker - ${pallet.palletCode}</title>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&display=swap');
+                        
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        
+                        body {
+                            font-family: 'Roboto Mono', monospace;
+                            width: 10cm;
+                            height: 15cm;
+                            padding: 8mm;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                        }
+                        
+                        .sticker-container {
+                            width: 100%;
+                            height: 100%;
+                            border: 1px solid #ddd;
+                            padding: 4mm;
+                            page-break-inside: avoid;
+                        }
+                        
+                        .sticker-title {
+                            font-weight: 900;
+                            font-size: 22px;
+                            text-align: center;
+                            color: #ea580c;
+                            margin-bottom: 2mm;
+                            letter-spacing: 0.5px;
+                        }
+                        
+                        .sticker-label {
+                            font-weight: 700;
+                            font-size: 8px;
+                            color: #4b5563;
+                            text-transform: uppercase;
+                            letter-spacing: 0.3px;
+                            margin-bottom: 1mm;
+                        }
+                        
+                        .sticker-value {
+                            font-weight: 600;
+                            font-size: 11px;
+                            color: #111827;
+                            line-height: 1.3;
+                            margin-bottom: 2mm;
+                        }
+                        
+                        .sticker-large-value {
+                            font-weight: 900;
+                            font-size: 16px;
+                            color: #1f2937;
+                            line-height: 1.2;
+                            margin-bottom: 3mm;
+                        }
+                        
+                        .barcode-container {
+                            text-align: center;
+                            margin: 3mm 0;
+                        }
+                        
+                        .grid-2 {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 3mm;
+                            margin-bottom: 3mm;
+                        }
+                        
+                        .border-top {
+                            border-top: 1px solid #9ca3af;
+                            padding-top: 3mm;
+                            margin-top: 3mm;
+                        }
+                        
+                        @page { 
+                            size: 10cm 15cm; 
+                            margin: 0; 
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="sticker-container">
+                        <!-- Header -->
+                        <div class="text-center" style="margin-bottom: 4mm;">
+                            <h1 class="sticker-title">NubaFarm</h1>
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 2mm;">
+                                <div style="width: 3mm; height: 3mm; background-color: #ea580c;"></div>
+                                <p class="sticker-label">PRODUCTION & LOGISTICS</p>
+                                <div style="width: 3mm; height: 3mm; background-color: #ea580c;"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Main Information -->
+                        <div style="margin-bottom: 4mm;">
+                            <div class="grid-2">
+                                <div>
+                                    <p class="sticker-label">${t('palletId')}</p>
+                                    <p class="sticker-large-value">${pallet.palletCode}</p>
+                                </div>
+                                <div>
+                                    <p class="sticker-label">${t('trackingCode')}</p>
+                                    <p class="sticker-large-value">${pallet.trackingCode}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="grid-2">
+                                <div>
+                                    <p class="sticker-label">${t('product')}</p>
+                                    <p class="sticker-value">${pallet.product}</p>
+                                </div>
+                                <div>
+                                    <p class="sticker-label">${t('size')}</p>
+                                    <p class="sticker-value">${pallet.size}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="grid-2">
+                                <div>
+                                    <p class="sticker-label">${t('category')}</p>
+                                    <p class="sticker-value">${pallet.category}</p>
+                                </div>
+                                <div>
+                                    <p class="sticker-label">${t('packageType')}</p>
+                                    <p class="sticker-value">${pallet.packageName}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="grid-2">
+                                <div>
+                                    <p class="sticker-label">${t('color')}</p>
+                                    <p class="sticker-value">${pallet.color}</p>
+                                </div>
+                                <div>
+                                    <p class="sticker-label">${t('palletBasis')}</p>
+                                    <p class="sticker-value">${pallet.palletType}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="grid-2">
+                                <div>
+                                    <p class="sticker-label">${t('quantity')}</p>
+                                    <p class="sticker-value">${pallet.quantity} ${t('boxes')}</p>
+                                </div>
+                                <div>
+                                    <p class="sticker-label">${t('netWeightKg')}</p>
+                                    <p class="sticker-value">${pallet.netWeight} KG</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Barcode -->
+                        <div class="barcode-container">
+                            <svg id="print-barcode"></svg>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="border-top">
+                            <div class="grid-2">
+                                <div>
+                                    <p class="sticker-label">${t('productionDate')}</p>
+                                    <p class="sticker-value">${pallet.productionDate}</p>
+                                </div>
+                                <div>
+                                    <p class="sticker-label">${t('generatedOn')}</p>
+                                    <p class="sticker-value">${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                </div>
+                            </div>
+                            
+                            <div style="text-align: center; margin-top: 3mm;">
+                                <p class="sticker-label" style="color: #374151;">nubafarm.com • +20 100 123 4567</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <script>
+                        // Generate barcode after content loads
+                        setTimeout(() => {
+                            try {
+                                JsBarcode("#print-barcode", "${pallet.trackingCode}", {
+                                    format: "CODE128",
+                                    width: 2,
+                                    height: 50,
+                                    displayValue: true,
+                                    fontOptions: "bold",
+                                    fontSize: 12,
+                                    textMargin: 3,
+                                    margin: 0,
+                                    background: "#ffffff",
+                                    lineColor: "#000000"
+                                });
+                                
+                                // Auto-print after barcode generation
+                                setTimeout(() => {
+                                    window.print();
+                                    window.onafterprint = function() {
+                                        window.close();
+                                    };
+                                }, 300);
+                            } catch(e) {
+                                console.log("Barcode error:", e);
+                                document.getElementById("print-barcode").innerHTML = 
+                                    '<div style="text-align:center;background:#f3f4f6;padding:4mm;border-radius:2mm;">' +
+                                    '<p style="font-family:monospace;font-weight:bold;">${pallet.trackingCode}</p>' +
+                                    '</div>';
+                                setTimeout(() => {
+                                    window.print();
+                                    window.close();
+                                }, 300);
+                            }
+                        }, 100);
+                    <\/script>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+        }
+
+        function printPalletSticker(palletCode) {
+            const pallet = appState.pallets.find(p => p.palletCode === palletCode);
+            if (!pallet) {
+                showNotification(t('palletNotFound'), 'error');
+                return;
+            }
+            
+            printSticker(pallet);
+        }
+
+        // ==================== CORE UI FUNCTIONS ====================
+        function toggleLanguage() {
+            appState.language = appState.language === 'en' ? 'ar' : 'en';
+            saveToLocalStorage();
+            renderNavigation();
+            renderContent();
+            updateLanguageButton();
+            
+            const appContainer = document.getElementById('app-container');
+            appContainer.dir = t('dir');
+        }
+
+        function updateLanguageButton() {
+            const button = document.getElementById('lang-button');
+            button.textContent = appState.language === 'en' ? 'العربية' : 'English';
+        }
+
+        function setActiveTab(tabId) {
+            appState.activeTab = tabId;
+            renderNavigation();
+            renderContent();
+        }
+
+        function renderNavigation() {
+            const navButtons = document.getElementById('nav-buttons');
+            const navItems = [
+                { id: 'dashboard', icon: 'fas fa-tachometer-alt' },
+                { id: 'production', icon: 'fas fa-box' },
+                { id: 'inventory', icon: 'fas fa-clipboard-list' },
+                { id: 'loading', icon: 'fas fa-truck' },
+                { id: 'settings', icon: 'fas fa-cog' }
+            ];
+
+            navButtons.innerHTML = navItems.map(item => {
+                const active = appState.activeTab === item.id;
+                return `
+                    <button onclick="setActiveTab('${item.id}')" class="flex flex-col md:flex-row items-center md:space-x-3 p-2 md:p-3 rounded-xl transition-all flex-1 md:flex-none rtl:space-x-reverse ${
+                        active ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    }">
+                        <i class="${item.icon} text-lg"></i>
+                        <span class="text-[9px] md:text-sm mt-1 md:mt-0 font-semibold">${t(item.id)}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        // ==================== CONTENT RENDERERS ====================
+        function renderContent() {
+            const contentArea = document.getElementById('content-area');
+            
+            switch(appState.activeTab) {
+                case 'dashboard':
+                    contentArea.innerHTML = renderDashboard();
+                    break;
+                case 'production':
+                    contentArea.innerHTML = renderProduction();
+                    setTimeout(updateStickerPreview, 100);
+                    break;
+                case 'inventory':
+                    contentArea.innerHTML = renderInventory();
+                    break;
+                case 'loading':
+                    contentArea.innerHTML = renderLoading();
+                    break;
+                case 'settings':
+                    contentArea.innerHTML = renderSettings();
+                    break;
+            }
+            
+            contentArea.classList.add('slide-up');
+        }
+
+        function updateStickerPreview() {
+            const product = document.getElementById('product-select')?.value || appState.products[0];
+            const size = parseInt(document.getElementById('size-select')?.value) || 36;
+            const category = document.getElementById('category-select')?.value || appState.categories[0];
+            const packageTypeId = document.getElementById('package-type-select')?.value || 'tc15';
+            const color = document.getElementById('color-select')?.value || appState.cartonColors[0];
+            const quantity = parseInt(document.getElementById('quantity-input')?.value) || 100;
+            const palletType = document.getElementById('pallet-type-select')?.value || 'Normal';
+            
+            const packageType = appState.packageTypes.find(p => p.id === packageTypeId);
+            const netWeight = quantity * (packageType?.weight || 15);
+            
+            const previewPallet = {
+                palletCode: generatePalletCode(),
+                trackingCode: generateTrackingCode(),
+                product,
+                category,
+                packageType: packageTypeId,
+                packageName: packageType?.name || 'TC 15 KG',
+                size,
+                palletType,
+                color,
+                quantity,
+                netWeight,
+                status: 'In Stock',
+                productionDate: formatDate()
+            };
+            
+            // Update sticker preview
+            const previewContainer = document.getElementById('sticker-preview');
+            if (previewContainer) {
+                previewContainer.innerHTML = generateStickerHTML(previewPallet);
+                
+                // Generate barcode for preview
+                setTimeout(() => {
+                    generateBarcode(previewPallet.trackingCode, `barcode-${previewPallet.trackingCode}`);
+                }, 100);
+            }
+            
+            // Update weight preview
+            const weightPreview = document.getElementById('weight-preview');
+            if (weightPreview) {
+                weightPreview.textContent = `${netWeight} KG`;
+            }
+        }
+
+        function renderProduction() {
+            const nextCode = generatePalletCode();
+            const nextTracking = generateTrackingCode();
+            
+            return `
+                <div class="fade-in">
+                    <div class="flex flex-col lg:flex-row gap-8">
+                        <!-- Left Column: Production Form -->
+                        <div class="lg:w-2/3">
+                            <h1 class="text-2xl md:text-3xl font-black text-slate-900 mb-2">${t('production')}</h1>
+                            <p class="text-slate-500 mb-8">${t('productionEntry')}</p>
+                            
+                            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Product Selection -->
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-2">${t('product')}</label>
+                                        <select id="product-select" onchange="updateStickerPreview()" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+                                            ${appState.products.map(product => `<option value="${product}">${product}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Size Selection -->
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-2">${t('size')}</label>
+                                        <select id="size-select" onchange="updateStickerPreview()" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+                                            ${appState.sizes.default.map(size => `<option value="${size}">${size}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Category Selection -->
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-2">${t('category')}</label>
+                                        <select id="category-select" onchange="updateStickerPreview()" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+                                            ${appState.categories.map(cat => `<option value="${cat}">${cat}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Package Type -->
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-2">${t('packageType')}</label>
+                                        <select id="package-type-select" onchange="updateStickerPreview()" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+                                            ${appState.packageTypes.map(pkg => `<option value="${pkg.id}">${pkg.name}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Carton Color -->
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-2">${t('cartonColor')}</label>
+                                        <select id="color-select" onchange="updateStickerPreview()" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+                                            ${appState.cartonColors.map(color => `<option value="${color}">${color}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Quantity -->
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-2">${t('quantity')} (${t('boxes')})</label>
+                                        <input type="number" id="quantity-input" value="100" min="1" onchange="updateStickerPreview()" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+                                    </div>
+                                    
+                                    <!-- Pallet Type -->
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-2">${t('palletBasis')}</label>
+                                        <select id="pallet-type-select" onchange="updateStickerPreview()" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+                                            <option value="Normal">Normal Pallet</option>
+                                            <option value="Euro">Euro Pallet</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Configuration Summary -->
+                                <div class="mt-8 p-4 bg-slate-50 rounded-xl">
+                                    <h3 class="font-bold text-slate-900 mb-3">${t('configSummary')}</h3>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div>
+                                            <p class="text-xs text-slate-500">${t('nextCode')}</p>
+                                            <p class="font-mono font-bold" id="next-code-preview">${nextCode}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-slate-500">${t('trackingCode')}</p>
+                                            <p class="font-mono font-bold" id="tracking-code-preview">${nextTracking}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-slate-500">${t('weight')}</p>
+                                            <p class="font-bold" id="weight-preview">1500 KG</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-slate-500">${t('productionDate')}</p>
+                                            <p class="font-bold">${formatDate()}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Generate Button -->
+                                <div class="mt-8">
+                                    <button onclick="generateNewPallet()" class="w-full bg-orange-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2 rtl:space-x-reverse">
+                                        <i class="fas fa-plus-circle"></i>
+                                        <span>${t('generatePallet')}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column: Sticker Preview -->
+                        <div class="lg:w-1/3">
+                            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 sticky top-8">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h2 class="text-lg font-black text-slate-900">${t('printPreview')}</h2>
+                                    <span class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                                        ${t('printSize')}
+                                    </span>
+                                </div>
+                                
+                                <!-- Sticker Preview -->
+                                <div class="flex justify-center mb-6">
+                                    <div id="sticker-preview" class="sticker-container shadow-lg">
+                                        <!-- Sticker content will be inserted here -->
+                                    </div>
+                                </div>
+                                
+                                <!-- Print Buttons -->
+                                <div class="space-y-3">
+                                    <button onclick="printSticker()" class="w-full bg-orange-600 text-white py-3 rounded-lg font-bold hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2 rtl:space-x-reverse">
+                                        <i class="fas fa-print"></i>
+                                        <span>${t('printSticker')}</span>
+                                    </button>
+                                    
+                                    <button onclick="generateNewPallet()" class="w-full border-2 border-slate-300 text-slate-700 py-3 rounded-lg font-bold hover:bg-slate-50 transition-colors flex items-center justify-center space-x-2 rtl:space-x-reverse">
+                                        <i class="fas fa-save"></i>
+                                        <span>${t('saveAndPrint')}</span>
+                                    </button>
+                                </div>
+                                
+                                <!-- Print Instructions -->
+                                <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                                    <p class="text-xs text-blue-800">
+                                        <i class="fas fa-info-circle mr-2 rtl:ml-2"></i>
+                                        ${t('printInstructions')}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateNewPallet() {
+            const product = document.getElementById('product-select').value;
+            const size = parseInt(document.getElementById('size-select').value);
+            const category = document.getElementById('category-select').value;
+            const packageTypeId = document.getElementById('package-type-select').value;
+            const color = document.getElementById('color-select').value;
+            const quantity = parseInt(document.getElementById('quantity-input').value) || 100;
+            const palletType = document.getElementById('pallet-type-select').value;
+            
+            const packageType = appState.packageTypes.find(p => p.id === packageTypeId);
+            const netWeight = quantity * packageType.weight;
+            
+            const newPallet = {
+                palletCode: generatePalletCode(),
+                trackingCode: generateTrackingCode(),
+                product,
+                category,
+                packageType: packageTypeId,
+                packageName: packageType.name,
+                size,
+                palletType,
+                color,
+                quantity,
+                netWeight,
+                status: 'In Stock',
+                productionDate: formatDate()
+            };
+            
+            appState.pallets.push(newPallet);
+            saveToLocalStorage();
+            showNotification(t('palletGenerated'), 'success');
+            
+            // Print the sticker automatically
+            printSticker(newPallet);
+            
+            // Go to inventory tab
+            setActiveTab('inventory');
+        }
+
+        function renderDashboard() {
+            const totalPallets = appState.pallets.length;
+            const inStockPallets = appState.pallets.filter(p => p.status === 'In Stock').length;
+            const shippedPallets = appState.pallets.filter(p => p.status === 'Shipped').length;
+            const today = formatDate();
+            const todayPallets = appState.pallets.filter(p => p.productionDate === today).length;
+            
+            return `
+                <div class="fade-in">
+                    <h1 class="text-2xl md:text-3xl font-black text-slate-900 mb-2">${t('dashboard')}</h1>
+                    <p class="text-slate-500 mb-8">${t('todayProduction')}: <span class="font-bold text-orange-600">${todayPallets} ${t('units')}</span></p>
+                    
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 card-hover">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm text-slate-500 font-medium mb-1">${t('totalRegistered')}</p>
+                                    <h3 class="text-3xl font-black text-slate-900">${totalPallets}</h3>
+                                </div>
+                                <div class="p-3 bg-blue-50 rounded-xl">
+                                    <i class="fas fa-pallet text-blue-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 card-hover">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm text-slate-500 font-medium mb-1">${t('inInventory')}</p>
+                                    <h3 class="text-3xl font-black text-slate-900">${inStockPallets}</h3>
+                                </div>
+                                <div class="p-3 bg-green-50 rounded-xl">
+                                    <i class="fas fa-warehouse text-green-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 card-hover">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm text-slate-500 font-medium mb-1">${t('shippedTotal')}</p>
+                                    <h3 class="text-3xl font-black text-slate-900">${shippedPallets}</h3>
+                                </div>
+                                <div class="p-3 bg-purple-50 rounded-xl">
+                                    <i class="fas fa-ship text-purple-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 card-hover">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm text-slate-500 font-medium mb-1">${t('todayProduction')}</p>
+                                    <h3 class="text-3xl font-black text-slate-900">${todayPallets}</h3>
+                                </div>
+                                <div class="p-3 bg-orange-50 rounded-xl">
+                                    <i class="fas fa-chart-line text-orange-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                        <h2 class="text-lg font-black text-slate-900 mb-6">${t('quickActions')}</h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <button onclick="setActiveTab('production')" class="p-6 bg-orange-50 border border-orange-200 rounded-xl hover:bg-orange-100 transition-colors text-left">
+                                <i class="fas fa-plus-circle text-orange-600 text-2xl mb-3"></i>
+                                <h3 class="font-bold text-slate-900 mb-1">${t('newEntry')}</h3>
+                                <p class="text-sm text-slate-600">${t('createNewPallet')}</p>
+                            </button>
+                            
+                            <button onclick="setActiveTab('loading')" class="p-6 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors text-left">
+                                <i class="fas fa-ship text-blue-600 text-2xl mb-3"></i>
+                                <h3 class="font-bold text-slate-900 mb-1">${t('newShipment')}</h3>
+                                <p class="text-sm text-slate-600">${t('createNewShipment')}</p>
+                            </button>
+                            
+                            <button onclick="setActiveTab('inventory')" class="p-6 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100 transition-colors text-left">
+                                <i class="fas fa-print text-green-600 text-2xl mb-3"></i>
+                                <h3 class="font-bold text-slate-900 mb-1">${t('printStickers')}</h3>
+                                <p class="text-sm text-slate-600">${t('printExistingPallets')}</p>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderInventory() {
+            const inStockPallets = appState.pallets.filter(p => p.status === 'In Stock');
+            
+            return `
+                <div class="fade-in">
+                    <h1 class="text-2xl md:text-3xl font-black text-slate-900 mb-2">${t('inventory')}</h1>
+                    <p class="text-slate-500 mb-8">${inStockPallets.length} ${t('units')} ${t('inInventory')}</p>
+                    
+                    <!-- Inventory Table -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        ${inStockPallets.length > 0 ? `
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead>
+                                        <tr class="text-left text-sm text-slate-500 bg-slate-50">
+                                            <th class="py-4 px-6 font-medium">${t('palletId')}</th>
+                                            <th class="py-4 px-6 font-medium">${t('product')}</th>
+                                            <th class="py-4 px-6 font-medium">${t('size')}</th>
+                                            <th class="py-4 px-6 font-medium">${t('packageType')}</th>
+                                            <th class="py-4 px-6 font-medium">${t('quantity')}</th>
+                                            <th class="py-4 px-6 font-medium">${t('productionDate')}</th>
+                                            <th class="py-4 px-6 font-medium">${t('actions')}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${inStockPallets.map(pallet => `
+                                            <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                                                <td class="py-4 px-6 font-mono text-sm font-bold">${pallet.palletCode}</td>
+                                                <td class="py-4 px-6 text-sm">${pallet.product}</td>
+                                                <td class="py-4 px-6 text-sm">${pallet.size}</td>
+                                                <td class="py-4 px-6 text-sm">${pallet.packageName}</td>
+                                                <td class="py-4 px-6 text-sm font-bold">${pallet.quantity} ${t('boxes')}</td>
+                                                <td class="py-4 px-6 text-sm">${pallet.productionDate}</td>
+                                                <td class="py-4 px-6">
+                                                    <button onclick="printPalletSticker('${pallet.palletCode}')" class="text-orange-600 hover:text-orange-700 text-sm font-bold flex items-center space-x-1 rtl:space-x-reverse">
+                                                        <i class="fas fa-print text-xs"></i>
+                                                        <span>${t('printSticker')}</span>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ` : `
+                            <div class="text-center py-16">
+                                <i class="fas fa-warehouse text-5xl text-slate-300 mb-4"></i>
+                                <h3 class="text-lg font-bold text-slate-700 mb-2">${t('noPallets')}</h3>
+                                <p class="text-slate-500 mb-6">${t('startProduction')}</p>
+                                <button onclick="setActiveTab('production')" class="bg-orange-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-orange-700 transition-colors">
+                                    ${t('newEntry')}
+                                </button>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderLoading() {
+            const availablePallets = appState.pallets.filter(p => p.status === 'In Stock');
+            
+            return `
+                <div class="fade-in">
+                    <h1 class="text-2xl md:text-3xl font-black text-slate-900 mb-2">${t('loading')}</h1>
+                    <p class="text-slate-500 mb-8">${t('shipmentMgmt')}</p>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Left Column: Create New Shipment -->
+                        <div class="lg:col-span-2">
+                            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6">
+                                <h2 class="text-lg font-black text-slate-900 mb-6">${t('newShipment')}</h2>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                    <!-- Customer Selection -->
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-2">${t('customer')}</label>
+                                        <select id="shipment-customer" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+                                            <option value="">${t('selectCustomer')}</option>
+                                            ${appState.customers.map(customer => `<option value="${customer}">${customer}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Destination Port -->
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-2">${t('destination')}</label>
+                                        <select id="shipment-port" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+                                            <option value="">${t('selectPort')}</option>
+                                            ${appState.ports.map(port => `<option value="${port}">${port}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Shipping Line -->
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-2">${t('shippingLine')}</label>
+                                        <select id="shipment-line" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+                                            <option value="">${t('selectShippingLine')}</option>
+                                            ${appState.shippingLines.map(line => `<option value="${line}">${line}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Container Number -->
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-2">${t('container')}</label>
+                                        <input type="text" id="shipment-container" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none" placeholder="e.g., MSCU1234567">
+                                    </div>
+                                </div>
+                                
+                                <!-- Available Pallets for Shipment -->
+                                <div class="mb-6">
+                                    <h3 class="font-bold text-slate-900 mb-4">${t('selectPallets')}</h3>
+                                    
+                                    ${availablePallets.length > 0 ? `
+                                        <div class="max-h-60 overflow-y-auto border border-slate-200 rounded-lg">
+                                            <table class="w-full">
+                                                <thead class="sticky top-0 bg-slate-50">
+                                                    <tr class="text-left text-sm text-slate-500">
+                                                        <th class="py-3 px-4">
+                                                            <input type="checkbox" id="select-all-pallets" onchange="toggleAllPallets(this.checked)">
+                                                        </th>
+                                                        <th class="py-3 px-4">${t('palletId')}</th>
+                                                        <th class="py-3 px-4">${t('product')}</th>
+                                                        <th class="py-3 px-4">${t('size')}</th>
+                                                        <th class="py-3 px-4">${t('quantity')}</th>
+                                                        <th class="py-3 px-4">${t('netWeight')}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${availablePallets.map(pallet => `
+                                                        <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                                                            <td class="py-3 px-4">
+                                                                <input type="checkbox" class="pallet-checkbox" value="${pallet.palletCode}" data-weight="${pallet.netWeight}">
+                                                            </td>
+                                                            <td class="py-3 px-4 font-mono text-sm">${pallet.palletCode}</td>
+                                                            <td class="py-3 px-4 text-sm">${pallet.product}</td>
+                                                            <td class="py-3 px-4 text-sm">${pallet.size}</td>
+                                                            <td class="py-3 px-4 text-sm">${pallet.quantity}</td>
+                                                            <td class="py-3 px-4 text-sm">${pallet.netWeight} KG</td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ` : `
+                                        <div class="text-center py-8 border border-slate-200 rounded-lg">
+                                            <i class="fas fa-box-open text-3xl text-slate-300 mb-3"></i>
+                                            <p class="text-slate-500">${t('noPalletsAvailable')}</p>
+                                        </div>
+                                    `}
+                                </div>
+                                
+                                <!-- Shipment Summary -->
+                                <div class="p-4 bg-slate-50 rounded-xl mb-6">
+                                    <h3 class="font-bold text-slate-900 mb-3">${t('shipmentDetails')}</h3>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div>
+                                            <p class="text-xs text-slate-500">${t('selectedPallets')}</p>
+                                            <p class="font-mono font-bold" id="selected-count">0</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-slate-500">${t('totalWeight')}</p>
+                                            <p class="font-bold" id="total-weight">0 KG</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-slate-500">${t('shipmentNumber')}</p>
+                                            <p class="font-mono font-bold" id="shipment-number">${generateShipmentNumber()}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-slate-500">${t('shippingDate')}</p>
+                                            <p class="font-bold">${formatDate()}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Create Shipment Button -->
+                                <div>
+                                    <button onclick="createShipment()" class="w-full bg-orange-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2 rtl:space-x-reverse">
+                                        <i class="fas fa-ship"></i>
+                                        <span>${t('createShipment')}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column: Recent Shipments -->
+                        <div class="lg:col-span-1">
+                            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 sticky top-8">
+                                <h2 class="text-lg font-black text-slate-900 mb-6">${t('recentActivity')}</h2>
+                                
+                                ${appState.shipments.length > 0 ? `
+                                    <div class="space-y-4">
+                                        ${appState.shipments.slice(0, 5).map(shipment => `
+                                            <div class="p-4 border border-slate-200 rounded-lg">
+                                                <div class="flex justify-between items-start mb-2">
+                                                    <h3 class="font-bold text-slate-900">${shipment.shipmentNumber}</h3>
+                                                    <span class="status-badge status-shipped">${t('shipped')}</span>
+                                                </div>
+                                                <p class="text-sm text-slate-600 mb-1">${shipment.customer}</p>
+                                                <p class="text-xs text-slate-500">${shipment.destination} • ${shipment.palletCount} ${t('units')}</p>
+                                                <p class="text-xs text-slate-500 mt-2">${shipment.shippingDate}</p>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : `
+                                    <div class="text-center py-8">
+                                        <i class="fas fa-ship text-3xl text-slate-300 mb-3"></i>
+                                        <p class="text-slate-500">${t('noShipments') || 'No shipments yet'}</p>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSettings() {
+            return `
+                <div class="fade-in">
+                    <h1 class="text-2xl md:text-3xl font-black text-slate-900 mb-2">${t('settings')}</h1>
+                    <p class="text-slate-500 mb-8">${t('supervisorAccess')}</p>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Left Column: Customer Management -->
+                        <div>
+                            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6">
+                                <h2 class="text-lg font-black text-slate-900 mb-6">${t('customerManagement') || 'Customer Management'}</h2>
+                                
+                                <!-- Add Customer Form -->
+                                <div class="mb-6">
+                                    <label class="block text-sm font-bold text-slate-900 mb-2">${t('addCustomer')}</label>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="new-customer" class="flex-1 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none" placeholder="${t('customerName')}">
+                                        <button onclick="addCustomer()" class="bg-orange-600 text-white px-6 rounded-lg font-bold hover:bg-orange-700 transition-colors">
+                                            ${t('add')}
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Customer List -->
+                                <div>
+                                    <h3 class="font-bold text-slate-900 mb-4">${t('customerList') || 'Customer List'}</h3>
+                                    ${appState.customers.length > 0 ? `
+                                        <div class="space-y-2">
+                                            ${appState.customers.map(customer => `
+                                                <div class="flex justify-between items-center p-3 border border-slate-200 rounded-lg hover:bg-slate-50">
+                                                    <span class="font-medium">${customer}</span>
+                                                    <button onclick="deleteCustomer('${customer}')" class="text-red-600 hover:text-red-700 text-sm font-bold">
+                                                        ${t('delete')}
+                                                    </button>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : `
+                                        <div class="text-center py-8 border border-slate-200 rounded-lg">
+                                            <p class="text-slate-500">${t('noCustomers') || 'No customers added yet'}</p>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                            
+                            <!-- PIN Code Settings -->
+                            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                                <h2 class="text-lg font-black text-slate-900 mb-6">${t('pinCodeSettings')}</h2>
+                                
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-2">${t('currentPin')}</label>
+                                        <input type="password" id="current-pin" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none" maxlength="4" placeholder="****">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-2">${t('newPin')}</label>
+                                        <input type="password" id="new-pin" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none" maxlength="4" placeholder="****">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-2">${t('confirmNewPin')}</label>
+                                        <input type="password" id="confirm-pin" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none" maxlength="4" placeholder="****">
+                                    </div>
+                                    
+                                    <button onclick="changePinCode()" class="w-full bg-orange-600 text-white py-3 rounded-lg font-bold hover:bg-orange-700 transition-colors">
+                                        ${t('changePin')}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column: Data Management -->
+                        <div>
+                            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6">
+                                <h2 class="text-lg font-black text-slate-900 mb-6">${t('dataManagement') || 'Data Management'}</h2>
+                                
+                                <!-- System Stats -->
+                                <div class="grid grid-cols-2 gap-4 mb-6">
+                                    <div class="p-4 bg-slate-50 rounded-lg">
+                                        <p class="text-xs text-slate-500 mb-1">${t('totalPallets') || 'Total Pallets'}</p>
+                                        <p class="text-2xl font-black">${appState.pallets.length}</p>
+                                    </div>
+                                    
+                                    <div class="p-4 bg-slate-50 rounded-lg">
+                                        <p class="text-xs text-slate-500 mb-1">${t('totalShipments') || 'Total Shipments'}</p>
+                                        <p class="text-2xl font-black">${appState.shipments.length}</p>
+                                    </div>
+                                    
+                                    <div class="p-4 bg-slate-50 rounded-lg">
+                                        <p class="text-xs text-slate-500 mb-1">${t('totalCustomers') || 'Total Customers'}</p>
+                                        <p class="text-2xl font-black">${appState.customers.length}</p>
+                                    </div>
+                                    
+                                    <div class="p-4 bg-slate-50 rounded-lg">
+                                        <p class="text-xs text-slate-500 mb-1">${t('systemLanguage') || 'Language'}</p>
+                                        <p class="text-2xl font-black">${appState.language.toUpperCase()}</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Clear Data Button -->
+                                <div>
+                                    <button onclick="showClearConfirmation()" class="w-full bg-red-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2 rtl:space-x-reverse">
+                                        <i class="fas fa-trash-alt"></i>
+                                        <span>${t('clearData')}</span>
+                                    </button>
+                                    
+                                    <p class="text-xs text-slate-500 mt-3 text-center">
+                                        ${t('clearWarning') || 'This action cannot be undone. Make sure to backup your data first.'}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <!-- System Information -->
+                            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                                <h2 class="text-lg font-black text-slate-900 mb-6">${t('systemInfo') || 'System Information'}</h2>
+                                
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-center p-3 border border-slate-200 rounded-lg">
+                                        <span class="font-medium">${t('version') || 'Version'}</span>
+                                        <span class="font-mono">2.1 (Android)</span>
+                                    </div>
+                                    
+                                    <div class="flex justify-between items-center p-3 border border-slate-200 rounded-lg">
+                                        <span class="font-medium">${t('developer') || 'Developer'}</span>
+                                        <span>Omar Elshafey</span>
+                                    </div>
+                                    
+                                    <div class="flex justify-between items-center p-3 border border-slate-200 rounded-lg">
+                                        <span class="font-medium">${t('lastUpdated') || 'Last Updated'}</span>
+                                        <span>${formatDate()}</span>
+                                    </div>
+                                    
+                                    <div class="flex justify-between items-center p-3 border border-slate-200 rounded-lg">
+                                        <span class="font-medium">${t('browserStorage') || 'Browser Storage'}</span>
+                                        <span>${localStorage.getItem('nubafarm_pallets') ? t('enabled') || 'Enabled' : t('disabled') || 'Disabled'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==================== LOADING FUNCTIONS ====================
+        function toggleAllPallets(checked) {
+            const checkboxes = document.querySelectorAll('.pallet-checkbox');
+            checkboxes.forEach(cb => cb.checked = checked);
+            updateShipmentSummary();
+        }
+
+        function updateShipmentSummary() {
+            const checkboxes = document.querySelectorAll('.pallet-checkbox:checked');
+            const selectedCount = checkboxes.length;
+            let totalWeight = 0;
+            
+            checkboxes.forEach(cb => {
+                totalWeight += parseFloat(cb.dataset.weight) || 0;
+            });
+            
+            document.getElementById('selected-count').textContent = selectedCount;
+            document.getElementById('total-weight').textContent = `${totalWeight} KG`;
+        }
+
+        function createShipment() {
+            const customer = document.getElementById('shipment-customer').value;
+            const port = document.getElementById('shipment-port').value;
+            const shippingLine = document.getElementById('shipment-line').value;
+            const container = document.getElementById('shipment-container').value;
+            
+            if (!customer || !port || !shippingLine || !container) {
+                showNotification(t('fillAllFields') || 'Please fill all fields', 'error');
+                return;
+            }
+            
+            const selectedCheckboxes = document.querySelectorAll('.pallet-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                showNotification(t('selectAtLeastOnePallet') || 'Select at least one pallet', 'error');
+                return;
+            }
+            
+            const selectedPallets = Array.from(selectedCheckboxes).map(cb => cb.value);
+            let totalWeight = 0;
+            let palletCount = 0;
+            
+            // Update pallet status to shipped
+            selectedPallets.forEach(palletCode => {
+                const pallet = appState.pallets.find(p => p.palletCode === palletCode);
+                if (pallet) {
+                    pallet.status = 'Shipped';
+                    totalWeight += pallet.netWeight;
+                    palletCount++;
+                }
+            });
+            
+            const newShipment = {
+                shipmentNumber: generateShipmentNumber(),
+                customer,
+                destination: port,
+                shippingLine,
+                container,
+                palletCount,
+                totalWeight,
+                shippingDate: formatDate(),
+                pallets: selectedPallets
+            };
+            
+            appState.shipments.unshift(newShipment);
+            saveToLocalStorage();
+            showNotification(t('shipmentCreated'), 'success');
+            
+            // Reset form
+            document.getElementById('shipment-customer').value = '';
+            document.getElementById('shipment-port').value = '';
+            document.getElementById('shipment-line').value = '';
+            document.getElementById('shipment-container').value = '';
+            document.querySelectorAll('.pallet-checkbox').forEach(cb => cb.checked = false);
+            updateShipmentSummary();
+            
+            // Refresh the loading tab
+            renderContent();
+        }
+
+        // ==================== SETTINGS FUNCTIONS ====================
+        function addCustomer() {
+            const customerInput = document.getElementById('new-customer');
+            const customerName = customerInput.value.trim();
+            
+            if (!customerName) {
+                showNotification(t('enterCustomerName') || 'Enter customer name', 'error');
+                return;
+            }
+            
+            if (appState.customers.includes(customerName)) {
+                showNotification(t('customerAlreadyExists') || 'Customer already exists', 'error');
+                return;
+            }
+            
+            appState.customers.push(customerName);
+            saveToLocalStorage();
+            showNotification(t('customerAdded'), 'success');
+            customerInput.value = '';
+            
+            // Refresh settings tab
+            renderContent();
+        }
+
+        function deleteCustomer(customerName) {
+            if (!confirm(t('confirmDeleteCustomer') || `Delete ${customerName}?`)) {
+                return;
+            }
+            
+            appState.customers = appState.customers.filter(c => c !== customerName);
+            saveToLocalStorage();
+            showNotification(t('customerDeleted'), 'success');
+            
+            // Refresh settings tab
+            renderContent();
+        }
+
+        function changePinCode() {
+            const currentPin = document.getElementById('current-pin').value;
+            const newPin = document.getElementById('new-pin').value;
+            const confirmPin = document.getElementById('confirm-pin').value;
+            
+            if (!currentPin || !newPin || !confirmPin) {
+                showNotification(t('fillAllPinFields') || 'Fill all PIN fields', 'error');
+                return;
+            }
+            
+            if (currentPin !== appState.pinCode) {
+                showNotification(t('incorrectPin'), 'error');
+                return;
+            }
+            
+            if (newPin !== confirmPin) {
+                showNotification(t('pinsDoNotMatch'), 'error');
+                return;
+            }
+            
+            appState.pinCode = newPin;
+            saveToLocalStorage();
+            showNotification(t('pinChanged'), 'success');
+            
+            // Clear inputs
+            document.getElementById('current-pin').value = '';
+            document.getElementById('new-pin').value = '';
+            document.getElementById('confirm-pin').value = '';
+        }
+
+        function showClearConfirmation() {
+            if (confirm(t('confirmClear'))) {
+                clearAllData();
+            }
+        }
+
+        function clearAllData() {
+            appState.pallets = [];
+            appState.shipments = [];
+            appState.customers = ["Global Fruits Ltd", "Fresh Market Europe", "Gulf Traders"];
+            saveToLocalStorage();
+            showNotification(t('dataCleared'), 'success');
+            
+            // Refresh current tab
+            renderContent();
+        }
+
+        // ==================== INITIALIZATION ====================
+        function initializeApp() {
+            loadFromLocalStorage();
+            updateLanguageButton();
+            document.getElementById('app-container').dir = t('dir');
+            renderNavigation();
+            renderContent();
+            
+            setTimeout(() => {
+                showNotification(`${t('welcome')} to NubaFarm System v2.1`, 'info');
+            }, 1000);
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        // Event listener for pallet checkboxes
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('pallet-checkbox')) {
+                updateShipmentSummary();
+            }
+        });
+    </script>
+</body>
+</html>

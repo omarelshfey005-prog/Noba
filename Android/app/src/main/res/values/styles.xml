@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.NubaFarm" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Primary color -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+        
+        <!-- Window properties -->
+        <item name="android:windowBackground">@color/bg_light</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowFullscreen">false</item>
+        
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/bg_white</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

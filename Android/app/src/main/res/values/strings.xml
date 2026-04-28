@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NubaFarm System</string>
+    <string name="app_description">Production & Logistics Management System</string>
+    <string name="loading">Loading NubaFarm System...</string>
+</resources>
